@@ -1,14 +1,19 @@
+import AdBanner from "@/components/addbanner";
 import { InputWithLabel } from "@/components/input";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className=" bg-gradient-to-b from-[#641478] to-[#23152c] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    
+    <div className="bg-[#f4f8ff] items-center justify-items-center min-h-screen p-8 mt-0 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       
       
+
+        
       
-      <section className="container px-4 py-10 mx-auto lg:h-128 lg:space-x-8 lg:flex lg:items-center">
+            <section className="container px-4 py-10 gap-[250px] mx-auto lg:h-128 lg:space-x-8 lg:flex lg:items-center">
+        
       <div className="w-full text-center lg:text-left lg:w-1/2 lg:-mt-8">
         
           <div className="flex flex-col items-center space-y-16">
@@ -16,11 +21,11 @@ export default function Home() {
           <h1 className="text-4xl font-medium tracking tight text-yellow-400">
             India's
           </h1>
-          <span className="text-4xl text-white font-medium tracking-tight">
+          <span className="text-4xl text-black font-medium tracking-tight">
             Simplest <span className="text-yellow-400">Pincode</span>
           </span>
           <br />
-          <span className="text-4xl text-white font-medium tracking-tight">
+          <span className="text-4xl text-black font-medium tracking-tight">
             Lookup Tool.
           </span>
         </div>
@@ -33,7 +38,7 @@ export default function Home() {
         </p>
         <div className="mt-6 bg-transparent border rounded-lg lg:w-2/3">
           <form
-            action="https://www.creative-tim.com/twcomponents/search"
+            
             className="flex flex-wrap justify-between md:flex-row"
           >
             <input
@@ -41,7 +46,8 @@ export default function Home() {
               name="query"
               placeholder="Search Pincode"
               required
-              className="flex-1 h-10 px-4 m-1 text-white placeholder-gray-400 bg-transparent border-none appearance-none lg:h-12 dark:text-gray-200 focus:outline-none focus:placeholder-transparent focus:ring-0"
+                className="flex-1 h-10 px-4 m-1 text-black placeholder-gray-400 bg-transparent border-none appearance-none lg:h-12 dark:text-gray-200 focus:outline-solid focus:placeholder-transparent focus:ring-0"
+                
             />
             <button
               type="submit"
@@ -64,18 +70,22 @@ export default function Home() {
             </button>
           </form>
         </div>
-      </div>
+        </div>
+        
       <div className="w-full mt-4 lg:mt-0 lg:w-1/2">
-        <img
+        {/* <img
           src="https://www.creative-tim.com/twcomponents/svg/website-designer-bro-purple.svg"
           alt="tailwind css components"
           className="w-full h-full max-w-md mx-auto"
-        />
+        /> */}
+          {/* <div className="w-full px-4">
+        <InputWithLabel/>
+      </div> */}
       </div>
       </section>
       <div className="w-full px-4">
         <InputWithLabel/>
-      </div>
+      </div> 
       {/* <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
         <a
           className="flex items-center gap-2 hover:underline hover:underline-offset-4"

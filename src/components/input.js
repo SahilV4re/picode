@@ -1,64 +1,101 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import AdBanner from "./addbanner";
 
 export function InputWithLabel() {
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [postOffices, setPostOffices] = useState([]);
+  const [initials, setInitials] = useState([]);
 
   const [selectedState, setSelectedState] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedInitial, setSelectedInitial] = useState(null);
   const [selectedPostOffice, setSelectedPostOffice] = useState(null);
+
+  const [loading, setLoading] = useState({ states: false, districts: false, postOffices: false });
 
   // Fetch states on mount
   useEffect(() => {
-    const fetchStates = async () => {
-      const response = await fetch("/api/states");
-      const data = await response.json();
-      setStates(data);
-    };
-    fetchStates();
+    setLoading((prev) => ({ ...prev, states: true }));
+    fetch("/api/states")
+      .then((res) => res.json())
+      .then((data) => setStates(data))
+      .finally(() => setLoading((prev) => ({ ...prev, states: false })));
   }, []);
 
   // Fetch districts when a state is selected
   useEffect(() => {
-    if (selectedState) {
-      const fetchDistricts = async () => {
-        const response = await fetch(`/api/districts?stateId=${selectedState}`);
-        const data = await response.json();
+    if (!selectedState) return;
+
+    setLoading((prev) => ({ ...prev, districts: true }));
+    fetch(`/api/districts?stateId=${selectedState}`)
+      .then((res) => res.json())
+      .then((data) => {
         setDistricts(data);
-        setPostOffices([]); // Clear post offices when state changes
-      };
-      fetchDistricts();
-    }
+        setPostOffices([]);
+        setInitials([]);
+      })
+      .finally(() => setLoading((prev) => ({ ...prev, districts: false })));
   }, [selectedState]);
 
-  // Fetch post offices when a district is selected
+  // Fetch post office initials when a district is selected
   useEffect(() => {
-    if (selectedDistrict) {
-      const fetchPostOffices = async () => {
-        const response = await fetch(`/api/postoffices?districtId=${selectedDistrict}`);
-        const data = await response.json();
-        setPostOffices(data);
-      };
-      fetchPostOffices();
-    }
+    if (!selectedDistrict) return;
+
+    setLoading((prev) => ({ ...prev, postOffices: true }));
+    fetch(`/api/postInitials?districtId=${selectedDistrict}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setInitials(data);
+        setPostOffices([]);
+      })
+      .finally(() => setLoading((prev) => ({ ...prev, postOffices: false })));
   }, [selectedDistrict]);
 
+  // Fetch post offices when initials are selected
+  useEffect(() => {
+    if (!selectedInitial || !selectedDistrict) return;
+  
+    console.log("Fetching post offices with:", selectedDistrict, selectedInitial); // ✅ Debugging Line
+  
+    setLoading((prev) => ({ ...prev, postOffices: true }));
+  
+    fetch(`/api/postoffices?districtId=${selectedDistrict}&initials=${selectedInitial}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("API Response:", data); // ✅ Debugging Line
+        setPostOffices(data); // Update state
+      })
+      .catch((error) => console.error("Fetch error:", error)) // ✅ Debugging Line
+      .finally(() => setLoading((prev) => ({ ...prev, postOffices: false })));
+  }, [selectedInitial, selectedDistrict]);
+  
+
   const handleSearch = () => {
-    console.log("State:", selectedState, "District:", selectedDistrict, "Post Office:", selectedPostOffice);
+    console.log("State:", selectedState, "District:", selectedDistrict, "Initials:", selectedInitial, "Post Office:", selectedPostOffice);
   };
 
   return (
-    <div className="grid-col text-2xl w-full max-w-sm items-center gap-3 text-white">
+    <div className="grid-col text-2xl w-full max-w-sm items-center gap-3 text-black">
+      
+      {/* State Dropdown */}
       <div className="space-y-1 mb-2">
         <Label>State</Label>
-        <Select onValueChange={(value) => setSelectedState(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select State" />
+        <Select onValueChange={setSelectedState} disabled={loading.states}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={loading.states ? "Loading..." : "Select State"} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -73,11 +110,12 @@ export function InputWithLabel() {
         </Select>
       </div>
 
+      {/* District Dropdown */}
       <div className="space-y-1 mb-2">
         <Label>District</Label>
-        <Select onValueChange={(value) => setSelectedDistrict(value)} disabled={!selectedState}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select District" />
+        <Select onValueChange={setSelectedDistrict} disabled={!selectedState || loading.districts}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={loading.districts ? "Loading..." : "Select District"} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -92,21 +130,19 @@ export function InputWithLabel() {
         </Select>
       </div>
 
+      {/* Post Office Initials Dropdown */}
       <div className="space-y-1 mb-2">
-        <Label>Post Office Name</Label>
-        <Select onValueChange={(value) => setSelectedPostOffice(value)} disabled={!selectedDistrict}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Post Office" />
+        <Label>Post Office Initials</Label>
+        <Select onValueChange={setSelectedInitial} disabled={!selectedDistrict || loading.postOffices}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={loading.postOffices ? "Loading..." : "Select Initial"} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Post Offices</SelectLabel>
-              
-
-              {
-                postOffices.map((postOffice) => (
-                <SelectItem key={postOffice.id} value={postOffice.id}>
-                  {postOffice.post_office_name}
+              <SelectLabel>Initials</SelectLabel>
+              {initials.map((initial) => (
+                <SelectItem key={initial.id} value={initial.initial}>
+                  {initial.initial}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -114,6 +150,31 @@ export function InputWithLabel() {
         </Select>
       </div>
 
+      {/* Post Office Name Dropdown */}
+      <div className="space-y-1 mb-2">
+        <Label>Post Office Name</Label>
+        <Select onValueChange={setSelectedPostOffice} disabled={!selectedInitial || loading.postOffices}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder={loading.postOffices ? "Loading..." : "Select Post Office"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Post Offices</SelectLabel>
+              {postOffices.length > 0 ? (
+                postOffices.map((postOffice) => (
+                  <SelectItem key={postOffice.id} value={postOffice.id}>
+                    {postOffice.post_office_name}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="text-gray-500 p-2 text-center">No post offices found</div>
+              )}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Search Button */}
       <div className="flex justify-start text-black mt-4">
         <Button variant="outline" onClick={handleSearch} disabled={!selectedPostOffice}>
           Search
