@@ -32,66 +32,105 @@ import * as cheerio from "cheerio";
 // scrapePostOfficeInitials("TAMIL_NADU/ARIYALUR");
 
 
-let finalPostOffices = []; // Keep this global if needed
+// let finalPostOffices = []; // Keep this global if needed
 
-async function scrapePostOfficesByInitial(state, district) {
-  const formattedState = encodeURIComponent(state.replace(/ /g, "_"));
-  const formattedDistrict = encodeURIComponent(district.replace(/ /g, "_"));
-  const baseURL = `https://pincode.net.in/${formattedState}/${formattedDistrict}`;
+// async function scrapePostOfficesByInitial(state, district) {
+//   const formattedState = encodeURIComponent(state.replace(/ /g, "_"));
+//   const formattedDistrict = encodeURIComponent(district.replace(/ /g, "_"));
+//   const baseURL = `https://pincode.net.in/${formattedState}/${formattedDistrict}`;
 
-  try {
-    console.log(`🌐 Fetching first-letter categories from: ${baseURL}`);
-    const { data } = await axios.get(baseURL);
-    const $ = cheerio.load(data);
+//   try {
+//     console.log(`🌐 Fetching first-letter categories from: ${baseURL}`);
+//     const { data } = await axios.get(baseURL);
+//     const $ = cheerio.load(data);
 
-    let initials = [];
+//     let initials = [];
 
-    // ✅ Get first-letter categories (A, B, C, etc.)
-    $("select[name='SelectURL'] option").each((_, el) => {
-      const letter = $(el).text().trim();
-      if (letter && letter.length === 1) {
-        initials.push(letter);
-      }
-    });
+//     // ✅ Get first-letter categories (A, B, C, etc.)
+//     $("select[name='SelectURL'] option").each((_, el) => {
+//       const letter = $(el).text().trim();
+//       if (letter && letter.length === 1) {
+//         initials.push(letter);
+//       }
+//     });
 
-    console.log(`🔠 Found initials:`, initials);
+//     console.log(`🔠 Found initials:`, initials);
 
-    let allPostOffices = []; // Reset list for fresh data
+//     let allPostOffices = []; // Reset list for fresh data
 
-    // ✅ Visit each first-letter page and extract names
-    for (const letter of initials) {
-      const letterURL = `${baseURL}/${letter}`;
-      console.log(`🌐 Fetching post offices for letter: ${letter} -> ${letterURL}`);
+//     // ✅ Visit each first-letter page and extract names
+//     for (const letter of initials) {
+//       const letterURL = `${baseURL}/${letter}`;
+//       console.log(`🌐 Fetching post offices for letter: ${letter} -> ${letterURL}`);
 
-      const { data: letterData } = await axios.get(letterURL);
-      const $$ = cheerio.load(letterData);
+//       const { data: letterData } = await axios.get(letterURL);
+//       const $$ = cheerio.load(letterData);
       
-      let postOfficesForLetter = []; // ✅ Reset this inside the loop
+//       let postOfficesForLetter = []; // ✅ Reset this inside the loop
 
-      $$("#po select[name='SelectURL'] option").each((_, el) => {
-        const postOffice = $$(el).text().trim();
-        if (postOffice && postOffice !== "Post Office Name") {
-          postOfficesForLetter.push(postOffice);
-        }
-      });
+//       $$("#po select[name='SelectURL'] option").each((_, el) => {
+//         const postOffice = $$(el).text().trim();
+//         if (postOffice && postOffice !== "Post Office Name") {
+//           postOfficesForLetter.push(postOffice);
+//         }
+//       });
 
-      // ✅ Merge unique values into `allPostOffices`
-      allPostOffices = [...new Set([...allPostOffices, ...postOfficesForLetter])];
+//       // ✅ Merge unique values into `allPostOffices`
+//       allPostOffices = [...new Set([...allPostOffices, ...postOfficesForLetter])];
 
-      console.log(`📌 Extracted post offices for '${letter}':`, postOfficesForLetter);
-    }
+//       console.log(`📌 Extracted post offices for '${letter}':`, postOfficesForLetter);
+//     }
 
-    // ✅ Update `finalPostOffices` at the end
-    finalPostOffices = [...new Set([...finalPostOffices, ...allPostOffices])];
+//     // ✅ Update `finalPostOffices` at the end
+//     finalPostOffices = [...new Set([...finalPostOffices, ...allPostOffices])];
 
-    return allPostOffices;
+//     return allPostOffices;
+//   } catch (error) {
+//     console.error(`❌ Error fetching post offices for ${district}, ${state}:`, error);
+//     return [];
+//   }
+// }
+
+// // Example usage
+// scrapePostOfficesByInitial("ANDAMAN_AND_NICOBAR_ISLANDS", "NICOBAR").then((data) =>
+//   console.log("✅ Final List of Post Offices:", data)
+// );
+
+
+
+// Test parameters
+const state = "DELHI";
+const district = "CENTRAL DELHI";
+const postOfficeInitial = "K";
+const postOfficeName = "KAROL BAGH";
+export const scrapePostOfficeDetails = async (state, district, postOfficeName) => {
+  try {
+    const formattedState = encodeURIComponent(state.replace(/ /g, "_"));
+    const formattedDistrict = encodeURIComponent(district.replace(/ /g, "_"));
+    const formattedPostOffice = encodeURIComponent(postOfficeName.replace(/ /g, "_"));
+
+    // Extract the first letter dynamically
+    const postOfficeInitial = formattedPostOffice.charAt(0).toUpperCase();
+    const postOfficeURL = `https://pincode.net.in/${formattedState}/${formattedDistrict}/${postOfficeInitial}/${formattedPostOffice}`;
+
+    console.log(`🌐 Fetching details from: ${postOfficeURL}`);
+    const { data } = await axios.get(postOfficeURL);
+    const $ = cheerio.load(data);
+    
+    return {
+      postOfficeName,
+      district,
+      state,
+      pinCode: $("b:contains('Pin Code:')").next("a").first().text().trim(),
+    };
   } catch (error) {
-    console.error(`❌ Error fetching post offices for ${district}, ${state}:`, error);
-    return [];
+    console.error(`❌ Error fetching details for ${postOfficeName}:`, error);
+    return null;
   }
-}
+};
 
-// Example usage
-scrapePostOfficesByInitial("ANDAMAN_AND_NICOBAR_ISLANDS", "NICOBAR").then((data) =>
-  console.log("✅ Final List of Post Offices:", data)
-);
+(async () => {
+  console.log(`🔠 Testing for Initial: ${postOfficeInitial}`);
+  const details = await scrapePostOfficeDetails(state, district, postOfficeName);
+  console.log("📌 Scraped Post Office Details:", details);
+})();
