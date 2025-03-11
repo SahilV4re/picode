@@ -5,21 +5,23 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const { districtId, initials } = req.query;
 
+    // ✅ Validate districtId and initials
     if (!districtId || !initials) {
       return res.status(400).json({ error: "Both districtId and initials are required" });
     }
 
     try {
-      const result = await pool.query(
+      // ✅ MySQL uses `?` for placeholders
+      const [rows] = await pool.query(
         `SELECT id, post_office_name 
          FROM post_offices 
-         WHERE district_id = $1 
-         AND post_office_name ILIKE $2
+         WHERE district_id = ? 
+         AND post_office_name LIKE ? 
          ORDER BY post_office_name`,
-        [districtId, `${initials}%`] // Filter by first letter
+        [districtId, `${initials}%`] // ✅ MySQL uses `LIKE` instead of `ILIKE`
       );
 
-      res.status(200).json(result.rows);
+      res.status(200).json(rows); // ✅ Send MySQL results
     } catch (error) {
       console.error("❌ Error fetching post offices:", error);
       res.status(500).json({ error: "Internal Server Error" });
