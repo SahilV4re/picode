@@ -13,6 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import AdBanner from "./addbanner";
 
+// Add this middleware before your routes
+
+// API base URL
+const API_BASE = "https://pincodechecker-beta.vercel.app";
+
 export function InputWithLabel() {
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -24,87 +29,150 @@ export function InputWithLabel() {
   const [selectedInitial, setSelectedInitial] = useState(null);
   const [selectedPostOffice, setSelectedPostOffice] = useState(null);
 
-  // New state to hold fetched pincode details
   const [pincodeDetails, setPincodeDetails] = useState(null);
-
-  const [loading, setLoading] = useState({ states: false, districts: false, postOffices: false });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState({ 
+    states: false, 
+    districts: false, 
+    postOffices: false,
+    search: false
+  });
 
   // Fetch states on mount
   useEffect(() => {
-    setLoading((prev) => ({ ...prev, states: true }));
-    fetch("/api/states")
-      .then((res) => res.json())
-      .then((data) => setStates(data))
-      .finally(() => setLoading((prev) => ({ ...prev, states: false })));
+    const fetchStates = async () => {
+      try {
+        setLoading(prev => ({ ...prev, states: true }));
+        setError(null);
+        const response = await fetch(`${API_BASE}/api/states`);
+        if (!response.ok) throw new Error('Failed to fetch states');
+        const data = await response.json();
+        setStates(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(prev => ({ ...prev, states: false }));
+      }
+    };
+
+    fetchStates();
   }, []);
 
   // Fetch districts when a state is selected
   useEffect(() => {
     if (!selectedState) return;
-    setLoading((prev) => ({ ...prev, districts: true }));
-    fetch(`/api/districts?stateId=${selectedState}`)
-      .then((res) => res.json())
-      .then((data) => {
+
+    const fetchDistricts = async () => {
+      try {
+        setLoading(prev => ({ ...prev, districts: true }));
+        setError(null);
+        const response = await fetch(`${API_BASE}/api/districts?stateId=${selectedState}`);
+        if (!response.ok) throw new Error('Failed to fetch districts');
+        const data = await response.json();
         setDistricts(data);
         setPostOffices([]);
         setInitials([]);
-      })
-      .finally(() => setLoading((prev) => ({ ...prev, districts: false })));
+        setSelectedDistrict(null);
+        setSelectedInitial(null);
+        setSelectedPostOffice(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(prev => ({ ...prev, districts: false }));
+      }
+    };
+
+    fetchDistricts();
   }, [selectedState]);
 
   // Fetch post office initials when a district is selected
   useEffect(() => {
     if (!selectedDistrict) return;
-    setLoading((prev) => ({ ...prev, postOffices: true }));
-    fetch(`/api/postInitials?districtId=${selectedDistrict}`)
-      .then((res) => res.json())
-      .then((data) => {
+
+    const fetchInitials = async () => {
+      try {
+        setLoading(prev => ({ ...prev, postOffices: true }));
+        setError(null);
+        const response = await fetch(`${API_BASE}/api/postInitials?districtId=${selectedDistrict}`);
+        if (!response.ok) throw new Error('Failed to fetch initials');
+        const data = await response.json();
         setInitials(data);
         setPostOffices([]);
-      })
-      .finally(() => setLoading((prev) => ({ ...prev, postOffices: false })));
+        setSelectedInitial(null);
+        setSelectedPostOffice(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(prev => ({ ...prev, postOffices: false }));
+      }
+    };
+
+    fetchInitials();
   }, [selectedDistrict]);
 
   // Fetch post offices when initials are selected
   useEffect(() => {
     if (!selectedInitial || !selectedDistrict) return;
-  
-    console.log("Fetching post offices with:", selectedDistrict, selectedInitial);
-    setLoading((prev) => ({ ...prev, postOffices: true }));
-    fetch(`/api/postoffices?districtId=${selectedDistrict}&initials=${selectedInitial}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("API Response:", data);
+
+    const fetchPostOffices = async () => {
+      try {
+        setLoading(prev => ({ ...prev, postOffices: true }));
+        setError(null);
+        const response = await fetch(
+          `${API_BASE}/api/postoffices?districtId=${selectedDistrict}&initials=${selectedInitial}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch post offices');
+        const data = await response.json();
         setPostOffices(data);
-      })
-      .catch((error) => console.error("Fetch error:", error))
-      .finally(() => setLoading((prev) => ({ ...prev, postOffices: false })));
+        setSelectedPostOffice(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(prev => ({ ...prev, postOffices: false }));
+      }
+    };
+
+    fetchPostOffices();
   }, [selectedInitial, selectedDistrict]);
 
-  // When search is clicked, fetch pincode details for the selected post office
+  // Handle search
   const handleSearch = async () => {
-    console.log("State:", selectedState, "District:", selectedDistrict, "Initials:", selectedInitial, "Post Office:", selectedPostOffice);
     if (!selectedPostOffice) return;
+
     try {
-      const response = await fetch(`/api/pincode?postOfficeId=${selectedPostOffice}`);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
+      setLoading(prev => ({ ...prev, search: true }));
+      setError(null);
+      const response = await fetch(`${API_BASE}/api/pincode?postOfficeId=${selectedPostOffice}`);
+      if (!response.ok) throw new Error('Failed to fetch pincode details');
       const data = await response.json();
       setPincodeDetails(data);
-    } catch (error) {
-      console.error("❌ Fetch error:", error);
+    } catch (err) {
+      setError(err.message);
+      setPincodeDetails(null);
+    } finally {
+      setLoading(prev => ({ ...prev, search: false }));
     }
   };
 
   return (
     <div className="grid-col text-2xl w-full max-w-sm items-center gap-3 text-black">
+      {/* Error Message */}
+      {error && (
+        <div className="p-2 mb-4 text-red-600 bg-red-100 rounded">
+          Error: {error}
+        </div>
+      )}
+
       {/* State Dropdown */}
       <div className="space-y-1 mb-2">
         <Label>State</Label>
-        <Select onValueChange={setSelectedState} disabled={loading.states}>
+        <Select 
+          onValueChange={setSelectedState} 
+          disabled={loading.states}
+          value={selectedState || undefined}
+        >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={loading.states ? "Loading..." : "Select State"} />
+            <SelectValue placeholder={loading.states ? "Loading states..." : "Select State"} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -122,9 +190,16 @@ export function InputWithLabel() {
       {/* District Dropdown */}
       <div className="space-y-1 mb-2">
         <Label>District</Label>
-        <Select onValueChange={setSelectedDistrict} disabled={!selectedState || loading.districts}>
+        <Select 
+          onValueChange={setSelectedDistrict} 
+          disabled={!selectedState || loading.districts}
+          value={selectedDistrict || undefined}
+        >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={loading.districts ? "Loading..." : "Select District"} />
+            <SelectValue placeholder={
+              !selectedState ? "Select state first" : 
+              loading.districts ? "Loading districts..." : "Select District"
+            } />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -142,9 +217,16 @@ export function InputWithLabel() {
       {/* Post Office Initials Dropdown */}
       <div className="space-y-1 mb-2">
         <Label>Post Office Initials</Label>
-        <Select onValueChange={setSelectedInitial} disabled={!selectedDistrict || loading.postOffices}>
+        <Select 
+          onValueChange={setSelectedInitial} 
+          disabled={!selectedDistrict || loading.postOffices}
+          value={selectedInitial || undefined}
+        >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={loading.postOffices ? "Loading..." : "Select Initial"} />
+            <SelectValue placeholder={
+              !selectedDistrict ? "Select district first" : 
+              loading.postOffices ? "Loading initials..." : "Select Initial"
+            } />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -162,9 +244,16 @@ export function InputWithLabel() {
       {/* Post Office Name Dropdown */}
       <div className="space-y-1 mb-2">
         <Label>Post Office Name</Label>
-        <Select onValueChange={setSelectedPostOffice} disabled={!selectedInitial || loading.postOffices}>
+        <Select 
+          onValueChange={setSelectedPostOffice} 
+          disabled={!selectedInitial || loading.postOffices}
+          value={selectedPostOffice || undefined}
+        >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder={loading.postOffices ? "Loading..." : "Select Post Office"} />
+            <SelectValue placeholder={
+              !selectedInitial ? "Select initial first" : 
+              loading.postOffices ? "Loading post offices..." : "Select Post Office"
+            } />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -176,56 +265,64 @@ export function InputWithLabel() {
                   </SelectItem>
                 ))
               ) : (
-                <div className="text-gray-500 p-2 text-center">No post offices found</div>
+                <div className="text-gray-500 p-2 text-center">
+                  {loading.postOffices ? "Loading..." : "No post offices found"}
+                </div>
               )}
             </SelectGroup>
           </SelectContent>
         </Select>
       </div>
+
       <div className="bg-black">
         <AdBanner
           className="w-full h-[50px]"
-          dataAdSlot="up" // Replace with your ad slot ID
+          dataAdSlot="up"
           dataAdFormat="auto"
           dataFullWidthResponsive={true}
         />
       </div>
+
       {/* Search Button */}
       <div className="flex justify-start text-black mt-4">
-        <Button variant="outline" onClick={handleSearch} disabled={!selectedPostOffice} className="w-full">
-          Search
+        <Button 
+          variant="outline" 
+          onClick={handleSearch} 
+          disabled={!selectedPostOffice || loading.search}
+          className="w-full"
+        >
+          {loading.search ? "Searching..." : "Search"}
         </Button>
       </div>
 
       {/* Display Pincode Details */}
       {pincodeDetails && (
         <div className="mt-4 p-4 border-solid border-2 border rounded-lg bg-white shadow-lg">
-        <div className="text-lg grid grid-cols-2 gap-4"> 
-          <div>
-            <h2 className="text-lg font-semibold">State:</h2>
-            <p>{states.find((s) => s.id === selectedState)?.state_name || "N/A"}</p>
+          <div className="text-lg grid grid-cols-2 gap-4"> 
+            <div>
+              <h2 className="text-lg font-semibold">State:</h2>
+              <p>{states.find(s => s.id === selectedState)?.state_name || "N/A"}</p>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">District:</h2>
+              <p>{districts.find(d => d.id === selectedDistrict)?.district_name || "N/A"}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold">District:</h2>
-            <p>{districts.find((d) => d.id === selectedDistrict)?.district_name || "N/A"}</p>
+          <div className="text-lg mt-4">
+            <h2 className="font-semibold">Post Office Name:</h2>
+            <p>{pincodeDetails.post_office_name}</p>
+          </div>
+          <div className="text-lg mt-2">
+            <h2 className="font-semibold">Pincode:</h2>
+            <p>{pincodeDetails.pin_code}</p> 
           </div>
         </div>
-        <div className="text-lg mt-4">
-          <h2 className="font-semibold">Post Office Name:</h2>
-          <p>{pincodeDetails.post_office_name}</p>
-        </div>
-        <div className="text-lg mt-2">
-          <h2 className="font-semibold">Pincode:</h2>
-          <p>{pincodeDetails.pin_code}</p> 
-        </div>
-      </div>
-      
       )}
 
       <div className="bg-black">
         <AdBanner
           className="w-full h-[50px]"
-          dataAdSlot="bottom" // Replace with your ad slot ID
+          dataAdSlot="bottom"
           dataAdFormat="auto"
           dataFullWidthResponsive={true}
         />
