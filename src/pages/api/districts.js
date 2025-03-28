@@ -2,8 +2,11 @@
 import pool from "@/server/db";
 
 export default async function handler(req, res) {
-  
+  res.setHeader('Access-Control-Allow-Origin', '*');  // Allow all origins temporarily
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === "GET") {
+
     
     const { stateId } = req.query; // Get stateId from query parameters
 
