@@ -1,6 +1,9 @@
 import pool from "@/server/db"; // Adjust based on your DB connection
 
 export default async function handler(req, res) {
+    res.setHeader("Access-Control-Allow-Origin", "*"); // Allow all origins
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
