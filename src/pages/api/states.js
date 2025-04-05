@@ -11,7 +11,7 @@ export default async function handler(req, res) {
         try {
             const [rows] = await pool.query("SELECT id, state_name FROM states");
 
-            console.log("Query Result:", rows); // ✅ Debugging
+            // ✅ Debugging
 
             res.status(200).json(rows);
         } catch (error) {
